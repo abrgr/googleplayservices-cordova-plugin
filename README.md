@@ -1,9 +1,8 @@
 googleplayservices-cordova-plugin
 =================================
 
-Cordova/Phonegap plugin for integrating "Google Play Service" (including Mediarouter) for Android into your application.
+Cordova/Phonegap plugin for integrating "Google Play Service" for Android into your application.
 
-Can be used as a replacement for `https://github.com/MobileChromeApps/google-play-services` in case that
 Google Play Service's resources are required as well.
 
 Installation

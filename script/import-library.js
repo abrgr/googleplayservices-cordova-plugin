@@ -16,8 +16,6 @@ module.exports = function(context) {
         console.info("[cordova-googleplayservices-plugin] "+message);
     };
 
-
-
     var androidHome = process.env.ANDROID_HOME;
     if( !androidHome ) {
         throw new Error("Environment variable ANDROID_HOME is not set to Android SDK directory");
@@ -26,12 +24,10 @@ module.exports = function(context) {
         log("Found Android SDK at "+androidHome);
     }
 
-
     /**
      * Copies an entire directory into another
      */
     var copyRecursiveSync = function(src, dest) {
-
         try {
             var exists = fs.existsSync(src);
             var stats = exists && fs.statSync(src);
@@ -55,7 +51,6 @@ module.exports = function(context) {
      * Executes an (external) command
      */
     var execCommand = function(command, callback) {
-
         log("Executing "+command+" ...");
         try {
             var p = exec(command, {maxBuffer: 500 * 1024},function (error, stdout, stderr) {
@@ -92,7 +87,6 @@ module.exports = function(context) {
      * @param path The location of the project
      */
     var prepareLibraryProject = function(path, callback) {
-
         log("Preparing project library at "+path+" ...");
         execCommand(androidHome+"/tools/android update lib-project -p "+path, function() {
             execCommand("ant clean -f "+path+"/build.xml", function() {
@@ -112,7 +106,6 @@ module.exports = function(context) {
      * Sets the api version in project's properties
      */
     var updateProjectApiVersion = function(path, apiVersion) {
-
         var propertiesPath = path+"/project.properties";
         var data = fs.readFileSync(propertiesPath, 'utf8');
         data = data.replace(/target=android-(\d+)/, "target=android-"+apiVersion);
@@ -160,47 +153,30 @@ module.exports = function(context) {
     var targetDir        = context.opts.plugin.dir;  // use this plugin's directory as a working dir
     targetDir = targetDir.replace(/\\/g,'/'); // normalize path separators for Windows
 
-    //var androidApiVersion   = 21;  // TODO make this configurable via environment
+    var androidApiVersion   = 21;  // TODO make this configurable via environment
 
     var appCompatLib            = targetDir+'/appcompat_lib';
     var appCompatSourceLib      = androidHome+"/extras/android/support/v7/appcompat";
 
-    var mediaRouterLib          = targetDir+'/mediarouter_lib';
-    var mediaRouterSourceLib    = androidHome+"/extras/android/support/v7/mediarouter";
-
     var playServicesLib         = targetDir+'/google-play-services_lib';
     var playServicesSourceLib   = androidHome+"/extras/google/google_play_services/libproject/google-play-services_lib";
-
 
     var deferral = new Q.defer();
 
     copyRecursiveSync(appCompatSourceLib+'/', appCompatLib+'/');
-    copyRecursiveSync(mediaRouterSourceLib+'/', mediaRouterLib+'/');
     copyRecursiveSync(playServicesSourceLib+'/', playServicesLib+'/');
 
     // --- turn AppCompatLib into a library project
+    updateProjectApiVersion(appCompatLib, androidApiVersion);
     prepareLibraryProject(appCompatLib, function() {
-
-        // --- turn MediarouterLib into a library project (after adjusting dependencies)
-        addLibraryReference(mediaRouterLib, ['../appcompat_lib'], function() {    // HACK: A _relative_ path is required here!
-            prepareLibraryProject(mediaRouterLib, function () {
-
-                // --- turn PlayServicesLib into a library project
-                //updateProjectApiVersion(playServicesLib, androidApiVersion);   // TODO problem when using Android Api version 21+
-                prepareLibraryProject(playServicesLib, function () {
-                    // add all three libraries to current project
-                    deferral.resolve();
-                });
-            });
+        // --- turn PlayServicesLib into a library project
+        updateProjectApiVersion(playServicesLib, androidApiVersion);
+        prepareLibraryProject(playServicesLib, function () {
+            // add all three libraries to current project
+            deferral.resolve();
         });
     });
 
     return deferral.promise;
 };
-
-
-
-
-
-
 

@@ -7,7 +7,7 @@
         <engine name="cordova" version=">=3.0.0" />
     </engines>
 
-    <name>Google Play Services (including Mediarouter) integration for Android</name>
+    <name>Google Play Services integration for Android</name>
 
     <platform name="android">
 
@@ -16,7 +16,6 @@
 
         <!-- add libraries -->
         <framework src="appcompat_lib" custom="true" />
-        <framework src="mediarouter_lib" custom="true" />
         <framework src="google-play-services_lib" custom="true" />
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
