@@ -105,12 +105,25 @@ module.exports = function(context) {
     /**
      * Sets the api version in project's properties
      */
-    var updateProjectApiVersion = function(path, apiVersion) {
+    var updateProjectApiVersion = function(path, apiVersion, cb) {
         var propertiesPath = path+"/project.properties";
-        var data = fs.readFileSync(propertiesPath, 'utf8');
-        data = data.replace(/target=android-(\d+)/, "target=android-"+apiVersion);
-        fs.writeFileSync(propertiesPath, data, "UTF-8",{'flags': 'w+'});
-        log("Updated "+propertiesPath+" with android api version "+apiVersion);
+        fs.readFile(propertiesPath, 'utf8', function(err, data) {
+            if ( err ) {
+                log('Error reading properties file');
+                throw err;
+            }
+
+            var data = data.replace(/target=android-(\d+)/, "target=android-"+apiVersion);
+            fs.writeFile(propertiesPath, data, "UTF-8",{'flags': 'w+'}, function(err) {
+                if ( err ) {
+                    log('Error writing properties file');
+                    throw err;
+                }
+
+                log("Updated "+propertiesPath+" with android api version "+apiVersion);
+                cb();
+            });
+        });
     };
 
 
@@ -167,13 +180,15 @@ module.exports = function(context) {
     copyRecursiveSync(playServicesSourceLib+'/', playServicesLib+'/');
 
     // --- turn AppCompatLib into a library project
-    updateProjectApiVersion(appCompatLib, androidApiVersion);
-    prepareLibraryProject(appCompatLib, function() {
-        // --- turn PlayServicesLib into a library project
-        updateProjectApiVersion(playServicesLib, androidApiVersion);
-        prepareLibraryProject(playServicesLib, function () {
-            // add all three libraries to current project
-            deferral.resolve();
+    updateProjectApiVersion(appCompatLib, androidApiVersion, function() {
+        prepareLibraryProject(appCompatLib, function() {
+            // --- turn PlayServicesLib into a library project
+            updateProjectApiVersion(playServicesLib, androidApiVersion, function() {
+                prepareLibraryProject(playServicesLib, function () {
+                    // add all three libraries to current project
+                    deferral.resolve();
+                });
+            });
         });
     });
 
